@@ -30,10 +30,12 @@ extends CharacterBody3D
 ## Whether the player can use movement inputs. 
 ## Does not stop outside forces or jumping. See Jumping Enabled.
 @export var immobile : bool = false
-## How fast to propel upwards when ledge-grabbing
-@export var ledge_grab_speed : float = 3.0
-## How fast to propel forward after almost reaching over the ledge
-@export var ledge_forward_speed : float = 2.0
+## Handles how fast you are flying:
+@export var fly_speed : float = 5.0
+### How fast to propel upwards when ledge-grabbing
+#@export var ledge_grab_speed : float = 3.0
+### How fast to propel forward after almost reaching over the ledge
+#@export var ledge_forward_speed : float = 2.0
 ## The reticle file to import at runtime. 
 ## By default are in res://addons/fpc/reticles/.
 ## Set to an empty string to remove
@@ -140,7 +142,7 @@ extends CharacterBody3D
 @export var ledge_grab : bool = true
 ## To enable a weapon switch or not
 @export var weapon_switch : bool = true
-# TODO: Think more ideas for variables
+@export var is_flying : bool = true
 #endregion
 
 #region Member Variable Initialization
@@ -229,6 +231,9 @@ func _physics_process(delta):
 	# To handle movement
 	handle_movement(delta, input_dir)
 
+	# To handle flying
+	handle_flying(delta)
+	
 	# To handle head rotation, like from mouse input
 	handle_head_rotation()
 	
@@ -253,7 +258,10 @@ func _physics_process(delta):
 	#update_debug_menu_per_tick()
 
 	# This must always be at the end of physics_process
-	was_on_floor = is_on_floor() 
+	was_on_floor = is_on_floor()
+	
+	# Move and slide at the end, as always
+	move_and_slide()
 #endregion
 
 #region Input Handling
@@ -295,8 +303,6 @@ func handle_movement(delta, input_dir):
 
 	if in_air_momentum or is_on_floor():
 		velocity_adjustment(delta, direction)
-
-	move_and_slide()
 
 func is_inverse(current_state: bool) -> int:
 	return -1 if current_state else 1
@@ -372,7 +378,18 @@ func handle_weapons_switch():
 		rotate_weapon_wheel()  # Pass previous state
 		update_weapon_visibility(weapon_state)
 
+func handle_flying(delta):
+	if not is_flying:
+		return
 
+	# Smooth vertical flying
+	var vertical_input := 0.0
+	if Input.is_action_pressed(controls.JUMP):
+		vertical_input = 1.0
+	elif Input.is_action_pressed(controls.CROUCH):
+		vertical_input = -1.0
+
+	velocity.y = lerp(velocity.y, vertical_input * speed, acceleration * delta)
 
 # TODO: Do this later, or not
 #func handle_ledge_grab():

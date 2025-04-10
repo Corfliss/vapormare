@@ -1,10 +1,8 @@
-[gd_scene load_steps=44 format=4 uid="uid://bvncr44h7klfq"]
+[gd_scene load_steps=42 format=4 uid="uid://bvncr44h7klfq"]
 
 [ext_resource type="Script" uid="uid://bp56nhc2tnpkk" path="res://Scripts/character.gd" id="1_oolk3"]
 [ext_resource type="Material" uid="uid://bo6ktvbouxnbe" path="res://Assets/low_poly_weapons/green.tres" id="2_lcuhw"]
-[ext_resource type="Script" uid="uid://ckbajuqdpp1oj" path="res://Scripts/pistol.gd" id="2_v7dgu"]
 [ext_resource type="Material" uid="uid://c2fa4xi4a30hs" path="res://Assets/low_poly_weapons/white.tres" id="3_atbvg"]
-[ext_resource type="Script" uid="uid://wyu8v684tebs" path="res://Scripts/shotgun.gd" id="3_vdqda"]
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_oolk3"]
 
@@ -592,6 +590,12 @@ controls = {
 &"SWITCH_LEFT": "switch_left",
 &"SWITCH_RIGHT": "switch_right"
 }
+jumping_enabled = false
+crouch_enabled = false
+continuous_jumping = false
+view_bobbing = false
+jump_animation = false
+gravity_enabled = false
 ledge_grab = false
 
 [node name="Mesh" type="MeshInstance3D" parent="."]
@@ -616,7 +620,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.222, 0, 0)
 
 [node name="WeaponPistol" type="Node3D" parent="Head/Weapons"]
 transform = Transform3D(0.0076385, 0, 0, 0, 0.0200935, 0, 0, 0, 0.0200935, 0, -0.156, -0.424)
-script = ExtResource("2_v7dgu")
 
 [node name="Weapon_04_White_0" type="MeshInstance3D" parent="Head/Weapons/WeaponPistol"]
 mesh = SubResource("ArrayMesh_atbvg")
@@ -628,7 +631,6 @@ skeleton = NodePath("")
 
 [node name="WeaponShotgun" type="Node3D" parent="Head/Weapons"]
 transform = Transform3D(0.0121282, 0, 0, 0, -0.0247904, 0.0429382, 0, -0.0429382, -0.0247904, 0, -0.567, 0.576)
-script = ExtResource("3_vdqda")
 
 [node name="Weapon_07_Black_0" type="MeshInstance3D" parent="Head/Weapons/WeaponShotgun"]
 mesh = SubResource("ArrayMesh_b014i")
