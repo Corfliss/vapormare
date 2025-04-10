@@ -4,19 +4,19 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://bhg4082qk760u"
-path="res://.godot/imported/scene.gltf-8495e34b9dbfdd49bf910b724b662aee.scn"
+path="res://.godot/imported/scene.gltf-2a862d6e42995ad3fd5a3ebf9f32a814.scn"
 
 [deps]
 
-source_file="res://low_poly_weapons/scene.gltf"
-dest_files=["res://.godot/imported/scene.gltf-8495e34b9dbfdd49bf910b724b662aee.scn"]
+source_file="res://Assets/low_poly_weapons/scene.gltf"
+dest_files=["res://.godot/imported/scene.gltf-2a862d6e42995ad3fd5a3ebf9f32a814.scn"]
 
 [params]
 
-nodes/root_type=""
-nodes/root_name=""
+nodes/root_type="Node3D"
+nodes/root_name="Weapons"
 nodes/apply_root_scale=true
-nodes/root_scale=1.0
+nodes/root_scale=0.02
 nodes/import_as_skeleton_bones=false
 nodes/use_node_type_suffixes=true
 meshes/ensure_tangents=true

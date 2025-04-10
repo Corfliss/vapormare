@@ -1,0 +1,5 @@
+[gd_scene load_steps=2 format=3 uid="uid://n7ki2wftvgo4"]
+
+[ext_resource type="PackedScene" uid="uid://bhg4082qk760u" path="res://Assets/low_poly_weapons/scene.gltf" id="1_eikqj"]
+
+[node name="Weapons" instance=ExtResource("1_eikqj")]

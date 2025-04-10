@@ -30,6 +30,10 @@ extends CharacterBody3D
 ## Whether the player can use movement inputs. 
 ## Does not stop outside forces or jumping. See Jumping Enabled.
 @export var immobile : bool = false
+## How fast to propel upwards when ledge-grabbing
+@export var ledge_grab_speed : float = 3.0
+## How fast to propel forward after almost reaching over the ledge
+@export var ledge_forward_speed : float = 2.0
 ## The reticle file to import at runtime. 
 ## By default are in res://addons/fpc/reticles/.
 ## Set to an empty string to remove
@@ -53,6 +57,12 @@ extends CharacterBody3D
 ## A reference to the the player's collision shape
 ## for use in the character script.
 @export var COLLISION_MESH : CollisionShape3D
+## The collection of weapons used in the game
+@export var WEAPONS : Node3D
+## To detect the ledge using raycast on the head
+@export var HEAD_RAYCAST : Node3D
+## To detect the ledge using raycast on the leg
+@export var LEG_RAYCAST : Node3D
 #endregion
 
 #region Controls Export Group
@@ -69,7 +79,9 @@ extends CharacterBody3D
 	JUMP = "ui_accept",
 	CROUCH = "crouch",
 	SPRINT = "sprint",
-	PAUSE = "ui_cancel"
+	PAUSE = "ui_cancel",
+	SWITCH_RIGHT = "switch_right",
+	SWITCH_LEFT = "switch_left"
 	}
 @export_subgroup("Controller Specific")
 ## This only affects how the camera is handled, 
@@ -126,12 +138,15 @@ extends CharacterBody3D
 ## To determines if the player can grab edges of the platform 
 ## for climbing over it (hasn't been used yet)
 @export var ledge_grab : bool = true
+## To enable a weapon switch or not
+@export var weapon_switch : bool = true
 # TODO: Think more ideas for variables
 #endregion
 
 #region Member Variable Initialization
 # These are variables used in this script that 
 # don't need to be exposed in the editor.
+enum Weapons {PISTOL, SHOTGUN, RIFLE}
 var speed : float = speed_base
 var speed_current : float = 0.0
 # States: normal, crouching, sprinting
@@ -139,19 +154,26 @@ var state : String = "normal"
 # This is for when the ceiling is too low and the player needs to crouch.
 var low_ceiling : bool = false 
 # Was the player on the floor last frame (for landing animation)
-var was_on_floor : bool = true 
-
+var was_on_floor : bool = true
+# Checking the state of the ledge_grab
+#var is_grabbing : bool = false
+#var is_climbing : bool = false
+# For weapon switching using tween and input queue
+var tween_weapon_running : bool = false
+var weapon_input_queue: Array[int] = []
+var weapon_state : int = Weapons.PISTOL
 # The reticle should always have a Control node as the root
 var RETICLE : Control
 # Stores mouse input for rotating the camera in the physics process
 var mouseInput : Vector2 = Vector2(0,0)
 # Get the gravity from the project settings to be synced with RigidBody nodes
 # Don't set this as a const, see the gravity section in _physics_process
-var gravity : float = ProjectSettings.get_setting("physics/3d/default_gravity") 
+var gravity : float = ProjectSettings.get_setting("physics/3d/default_gravity")
 #endregion
 
 #region Main Control Flow
 func _ready():
+
 	# It is safe to comment this line if your game doesn't 
 	# start with the mouse captured
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
@@ -160,7 +182,7 @@ func _ready():
 	# purposes, redirect this rotation into the head.
 	HEAD.rotation.y = rotation.y
 	rotation.y = 0
-
+	
 	# Change the default recticle
 	#if default_reticle:
 		#change_reticle(default_reticle)
@@ -169,14 +191,12 @@ func _ready():
 	initialize_animations()
 	check_controls()
 	enter_normal_state()
+	update_weapon_visibility(weapon_state)
 
 # Handle pause
 func _process(_delta):
 	if pausing_enabled:
 		handle_pausing()
-
-	# For debug update, will be on another document
-	#update_debug_menu_per_frame()
 
 # Zakarya: Most things happen here
 func _physics_process(delta): 
@@ -190,6 +210,9 @@ func _physics_process(delta):
 
 	# To handle jumping, just like its name
 	handle_jumping()
+
+	# Uncomment this part for ledge grab	
+	#handle_ledge_grab()
 
 	# Initilize input diretion if nothing happened
 	var input_dir = Vector2.ZERO
@@ -206,8 +229,11 @@ func _physics_process(delta):
 	# To handle movement
 	handle_movement(delta, input_dir)
 
-	# to handle head rotation, like from mouse input
+	# To handle head rotation, like from mouse input
 	handle_head_rotation()
+	
+	# To handle weapon switch
+	handle_weapons_switch()
 
 	# The player is not able to stand up if the ceiling is too low
 	low_ceiling = $CrouchCeilingDetection.is_colliding()
@@ -251,6 +277,7 @@ func handle_jumping():
 	if jump_pressed and is_on_floor() and not low_ceiling:
 		if jump_animation:
 			JUMP_ANIMATION.play("jump", 0.25)
+		# I don't know why, but if I don't divide the velocity it will remain the same
 		velocity.y += jump_velocity
 
 func velocity_adjustment(delta, direction):
@@ -263,12 +290,8 @@ func velocity_adjustment(delta, direction):
 	velocity.z = lerp(velocity.z, direction.z * speed, acceleration * delta)
 	
 func handle_movement(delta, input_dir):
-	# Get the HEAD's yaw in radians
-	var yaw = deg_to_rad(HEAD.rotation_degrees.y)
-	
-	# Rotate input direction by the head yaw only (we ignore pitch here)
-	var direction = input_dir.rotated(-yaw)
-	direction = Vector3(direction.x, 0, direction.y) # Make it a 3D vector
+	var direction = input_dir.rotated(-HEAD.rotation.y)
+	direction = Vector3(direction.x, 0, direction.y)
 
 	if in_air_momentum or is_on_floor():
 		velocity_adjustment(delta, direction)
@@ -304,6 +327,71 @@ func handle_head_rotation():
 	# Reset mouse input after applying it
 	mouseInput = Vector2.ZERO
 
+func update_weapon_visibility(current_state):
+	for i in range(WEAPONS.get_child_count()):
+		WEAPONS.get_child(i).visible = (i == current_state)
+		
+func rotate_weapon_wheel():
+	if tween_weapon_running:
+		return  # Prevent new tween from starting
+
+	tween_weapon_running = true
+	
+	var target_rotation = deg_to_rad(120) * weapon_state
+
+	# Force rotation to be set from clean base (no drift)
+	WEAPONS.rotation.x = target_rotation - deg_to_rad(120)
+
+	# Create a fresh tween each time
+	var tween := create_tween()
+	
+	tween.tween_property(
+		WEAPONS, "rotation:x", target_rotation, 0.15
+	).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
+	
+	# TODO: Fix this stuff from triple/quadruple or even a lot of input buffer
+	# I have to connect to a dedicated function for input buffer
+	tween.finished.connect(
+		func():
+		tween_weapon_running = false
+		if not weapon_input_queue.is_empty():
+			var next_direction = weapon_input_queue.pop_front()
+			weapon_state = (weapon_state + next_direction + 3) % 3
+			update_weapon_visibility(weapon_state)
+			rotate_weapon_wheel()
+	)
+
+func handle_weapons_switch():
+	if Input.is_action_just_pressed(controls.SWITCH_RIGHT):
+		weapon_state = (weapon_state + 1) % 3
+		rotate_weapon_wheel()  # Pass previous state
+		update_weapon_visibility(weapon_state)
+
+	elif Input.is_action_just_pressed(controls.SWITCH_LEFT):
+		weapon_state = (weapon_state - 1 + 3) % 3
+		rotate_weapon_wheel()  # Pass previous state
+		update_weapon_visibility(weapon_state)
+
+
+
+# TODO: Do this later, or not
+#func handle_ledge_grab():
+	#
+	#if not ledge_grab or not Input.is_action_just_pressed("ui_accept") or not HEAD_RAYCAST.is_colliding():
+		#return
+		#
+	#while true:
+		#if not LEG_RAYCAST.is_colliding():
+			#velocity.y = ledge_grab_speed
+		#elif LEG_RAYCAST.is_colliding():
+			#velocity.y = ledge_grab_speed * 0.5
+			#velocity.z = ledge_forward_speed
+		#else:
+			#velocity = Vector3.ZERO
+			#break  # Stop the function when ledge grab is complete
+#
+	#move_and_slide()
+
 func check_controls():
 	var control_checks = {
 		controls.JUMP: ["No control mapped for jumping. 
@@ -329,7 +417,13 @@ func check_controls():
 			"crouch_enabled", false],
 		controls.SPRINT: ["No control mapped for sprint. 
 			Please add an input map control. Disabling sprinting.", 
-			"sprint_enabled", false]
+			"sprint_enabled", false],
+		controls.SWITCH_RIGHT: ["No control mapped for switch_right 
+			Please add an input map control. Disabling weapon switch.", 
+			"weapon_switch", false],
+		controls.SWITCH_LEFT: ["No control mapped for switch_right 
+			Please add an input map control. Disabling weapon switch.", 
+			"weapon_switch", false]
 	}
 
 	# Check for error of input for each of the control input

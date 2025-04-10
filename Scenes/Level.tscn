@@ -1,0 +1,14 @@
+[gd_scene load_steps=2 format=3 uid="uid://dd22pdi0qofnm"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_sfrck"]
+normal_scale = -8.69
+
+[node name="Level" type="Node3D"]
+
+[node name="Ground" type="CSGCylinder3D" parent="."]
+transparency = 0.79
+use_collision = true
+radius = 15.0
+height = 0.466
+sides = 32
+material = SubResource("StandardMaterial3D_sfrck")
