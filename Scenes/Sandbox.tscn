@@ -1,8 +1,10 @@
-[gd_scene load_steps=7 format=3 uid="uid://c8xbhqgw71my6"]
+[gd_scene load_steps=9 format=3 uid="uid://c8xbhqgw71my6"]
 
 [ext_resource type="PackedScene" uid="uid://dd22pdi0qofnm" path="res://Scenes/Level.tscn" id="1_gaqdb"]
+[ext_resource type="Script" uid="uid://b827qfxtk7xjt" path="res://Scripts/game_manager.gd" id="1_j25i0"]
 [ext_resource type="Shader" uid="uid://cf3uuo7m3h8j7" path="res://addons/vaporwavesky/vaporwave.gdshader" id="1_xqu6k"]
 [ext_resource type="PackedScene" uid="uid://bvncr44h7klfq" path="res://Scenes/Character.tscn" id="1_y8ncq"]
+[ext_resource type="PackedScene" uid="uid://8q50dsp6talc" path="res://Scenes/BluePyramid.tscn" id="2_n1lsy"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_eo7g3"]
 shader = ExtResource("1_xqu6k")
@@ -52,14 +54,23 @@ sky = SubResource("Sky_xqu6k")
 
 [node name="Level" type="Node3D"]
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
-transform = Transform3D(-0.866023, -0.433016, 0.250001, 0, 0.499998, 0.866027, -0.500003, 0.749999, -0.43301, 0, 0, 0)
+[node name="GameManager" type="Node3D" parent="." node_paths=PackedStringArray("level", "character")]
+script = ExtResource("1_j25i0")
+enemy_blue = ExtResource("2_n1lsy")
+level = NodePath("../Environments/Level")
+character = NodePath("../Character")
+spawn_minimum_range = 5.0
+
+[node name="Environments" type="Node3D" parent="."]
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="Environments"]
+transform = Transform3D(-0.866024, -0.433016, 0.250001, 0, 0.499998, 0.866026, -0.500003, 0.749999, -0.43301, 0, 0, 0)
 shadow_enabled = true
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+[node name="WorldEnvironment" type="WorldEnvironment" parent="Environments"]
 environment = SubResource("Environment_jgjqi")
 
-[node name="Level" parent="." instance=ExtResource("1_gaqdb")]
+[node name="Level" parent="Environments" instance=ExtResource("1_gaqdb")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
 
-[node name="CharacterBody3D" parent="." instance=ExtResource("1_y8ncq")]
+[node name="Character" parent="." instance=ExtResource("1_y8ncq")]

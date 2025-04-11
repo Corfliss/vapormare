@@ -3,7 +3,8 @@
 ## COPYRIGHT Colormatic Studios
 ## MIT license
 ## Quality Godot First Person Controller v2
-## with some modification.
+## 
+## (With some modification)
 extends CharacterBody3D
 
 # TODO: Set the options on dedicated settings GDScript file
@@ -31,14 +32,13 @@ extends CharacterBody3D
 ## Does not stop outside forces or jumping. See Jumping Enabled.
 @export var immobile : bool = false
 ## Handles how fast you are flying:
-@export var fly_speed : float = 5.0
+@export var fly_speed : float = 7.0
 ### How fast to propel upwards when ledge-grabbing
 #@export var ledge_grab_speed : float = 3.0
 ### How fast to propel forward after almost reaching over the ledge
 #@export var ledge_forward_speed : float = 2.0
+@export var max_health : int = 100
 ## The reticle file to import at runtime. 
-## By default are in res://addons/fpc/reticles/.
-## Set to an empty string to remove
 @export_file var default_reticle
 #endregion
 
@@ -61,6 +61,8 @@ extends CharacterBody3D
 @export var COLLISION_MESH : CollisionShape3D
 ## The collection of weapons used in the game
 @export var WEAPONS : Node3D
+## For health bar
+@export var health_bar : ProgressBar
 ## To detect the ledge using raycast on the head
 @export var HEAD_RAYCAST : Node3D
 ## To detect the ledge using raycast on the leg
@@ -83,7 +85,8 @@ extends CharacterBody3D
 	SPRINT = "sprint",
 	PAUSE = "ui_cancel",
 	SWITCH_RIGHT = "switch_right",
-	SWITCH_LEFT = "switch_left"
+	SWITCH_LEFT = "switch_left",
+	SHOOT = "shoot"
 	}
 @export_subgroup("Controller Specific")
 ## This only affects how the camera is handled, 
@@ -142,7 +145,10 @@ extends CharacterBody3D
 @export var ledge_grab : bool = true
 ## To enable a weapon switch or not
 @export var weapon_switch : bool = true
+## Flags for flying mechanics
 @export var is_flying : bool = true
+## Whether or not if you can shoot the gun
+@export var can_shoot : bool = true
 #endregion
 
 #region Member Variable Initialization
@@ -153,6 +159,8 @@ var speed : float = speed_base
 var speed_current : float = 0.0
 # States: normal, crouching, sprinting
 var state : String = "normal"
+# for initiating the max health
+var current_health : int = max_health
 # This is for when the ceiling is too low and the player needs to crouch.
 var low_ceiling : bool = false 
 # Was the player on the floor last frame (for landing animation)
@@ -185,16 +193,17 @@ func _ready():
 	HEAD.rotation.y = rotation.y
 	rotation.y = 0
 	
-	# Change the default recticle
-	#if default_reticle:
-		#change_reticle(default_reticle)
+	 #Change the default recticle
+	if default_reticle:
+		change_reticle(default_reticle)
 
 	# Initialize the condition for the first tick
 	initialize_animations()
 	check_controls()
 	enter_normal_state()
 	update_weapon_visibility(weapon_state)
-
+	update_health_ui()
+	
 # Handle pause
 func _process(_delta):
 	if pausing_enabled:
@@ -368,6 +377,8 @@ func rotate_weapon_wheel():
 	)
 
 func handle_weapons_switch():
+	if not weapon_switch:
+		return
 	if Input.is_action_just_pressed(controls.SWITCH_RIGHT):
 		weapon_state = (weapon_state + 1) % 3
 		rotate_weapon_wheel()  # Pass previous state
@@ -435,12 +446,15 @@ func check_controls():
 		controls.SPRINT: ["No control mapped for sprint. 
 			Please add an input map control. Disabling sprinting.", 
 			"sprint_enabled", false],
-		controls.SWITCH_RIGHT: ["No control mapped for switch_right 
+		controls.SWITCH_RIGHT: ["No control mapped for switch right 
 			Please add an input map control. Disabling weapon switch.", 
 			"weapon_switch", false],
-		controls.SWITCH_LEFT: ["No control mapped for switch_right 
+		controls.SWITCH_LEFT: ["No control mapped for switch left
 			Please add an input map control. Disabling weapon switch.", 
-			"weapon_switch", false]
+			"weapon_switch", false],
+		controls.SHOOT: ["No control mapped for shoot 
+			Please add an input map control. Disabling shooting.", 
+			"can_shoot", false]
 	}
 
 	# Check for error of input for each of the control input
@@ -592,13 +606,15 @@ func play_jump_animation():
 
 #region Misc Function
 # Zakarya: Yup, this function is kinda strange
-func change_reticle(reticle): 
+func change_reticle(reticle):
 	if RETICLE:
 		RETICLE.queue_free()
 
 	RETICLE = load(reticle).instantiate()
 	RETICLE.character = self
-	$UserInterface.add_child(RETICLE)
+
+	RETICLE.set_anchors_preset(Control.PRESET_CENTER)
+	$Reticle.add_child(RETICLE)
 
 # Update camera FOV
 func update_camera_fov():
@@ -618,8 +634,30 @@ func handle_pausing():
 	Input.mouse_mode = mode_map.get(Input.mouse_mode, Input.MOUSE_MODE_VISIBLE)
 	#get_tree().paused = false
 
+func _input(event):
+	if event.is_action_pressed(controls.SHOOT) and weapon_state == Weapons.PISTOL:
+		$Head/Weapons/WeaponPistol.shoot()
+
 func _unhandled_input(event : InputEvent):
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		mouseInput.x += event.relative.x
 		mouseInput.y += event.relative.y
+#endregion
+
+#region Health
+func take_damage(amount: int) -> void:
+	current_health = max(current_health - amount, 0)
+	update_health_ui()
+	if current_health == 0:
+		die()
+		
+func update_health_ui() -> void:
+	if health_bar:
+		health_bar.max_value = max_health
+		health_bar.value = current_health
+
+func die():
+	print("Character is dead")
+	# Play death animation, respawn, etc.
+	get_tree().quit()
 #endregion

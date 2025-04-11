@@ -1,5 +1,11 @@
 extends Node3D
 
-func shoot(hit_info: Dictionary):
-	if hit_info.has("collider"):
-		print("Pistol hit:", hit_info.collider.name)
+@onready var aim_raycast: RayCast3D = %AimRayCast
+
+func shoot():
+	if aim_raycast.is_colliding():
+		var hit = aim_raycast.get_collider()
+		print("Hit object:", hit.name)
+		
+		if hit.is_in_group("enemy"):
+			hit.queue_free()
