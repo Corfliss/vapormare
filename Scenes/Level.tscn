@@ -1,6 +1,5 @@
-[gd_scene load_steps=5 format=3 uid="uid://dd22pdi0qofnm"]
+[gd_scene load_steps=4 format=3 uid="uid://dd22pdi0qofnm"]
 
-[ext_resource type="PackedScene" uid="uid://8q50dsp6talc" path="res://Scenes/BluePyramid.tscn" id="1_0ba56"]
 [ext_resource type="Script" uid="uid://ca4632uf86jr" path="res://Scripts/fall_dead.gd" id="2_vsvp5"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_sfrck"]
@@ -12,9 +11,6 @@ height = 1.0
 radius = 30.0
 
 [node name="Level" type="Node3D"]
-
-[node name="Node3D" parent="." instance=ExtResource("1_0ba56")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -13.8996)
 
 [node name="Ground" type="CSGCylinder3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0)

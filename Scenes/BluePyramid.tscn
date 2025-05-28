@@ -1,17 +1,57 @@
-[gd_scene load_steps=3 format=3 uid="uid://8q50dsp6talc"]
+[gd_scene load_steps=9 format=3 uid="uid://8q50dsp6talc"]
 
 [ext_resource type="Script" uid="uid://col1dpa0ln0wq" path="res://Scripts/pyramid_instance.gd" id="1_7eney"]
+[ext_resource type="AudioStream" uid="uid://bwyqb55x8uj0a" path="res://Assets/explosion-91872.mp3" id="2_bv6vi"]
 
 [sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_035ce"]
 points = PackedVector3Array(-1, 0, -1, -1, 0, 1, 1, 0, -1, 1, 0, 1, 0, 2, 0)
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_7eney"]
+points = PackedVector3Array(-0.8, 0, -0.8, -0.8, 0, 0.8, 0.8, 0, -0.8, 0.8, 0, 0.8, 0, 1.6, 0)
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_7eney"]
+direction = Vector3(1, 1, 1)
+spread = 180.0
+initial_velocity_min = 26.55
+initial_velocity_max = 26.55
+gravity = Vector3(0, 0, 0)
+radial_accel_min = -2.23517e-06
+radial_accel_max = -2.23517e-06
+damping_min = 33.654
+damping_max = 33.654
+attractor_interaction_enabled = false
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_bv6vi"]
+albedo_color = Color(0.266667, 0.266667, 0.933333, 1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_ks5fa"]
+material = SubResource("StandardMaterial3D_bv6vi")
+radius = 0.1
+height = 0.2
+
+[sub_resource type="Skin" id="Skin_6mo0d"]
 
 [node name="Pyramids" type="CharacterBody3D" groups=["enemy"]]
 script = ExtResource("1_7eney")
 
 [node name="Area3D" type="Area3D" parent="."]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Area3D"]
+[node name="CollisionShape3D2" type="CollisionShape3D" parent="Area3D"]
 shape = SubResource("ConvexPolygonShape3D_035ce")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
-shape = SubResource("ConvexPolygonShape3D_035ce")
+[node name="CollisionShape3D2" type="CollisionShape3D" parent="."]
+shape = SubResource("ConvexPolygonShape3D_7eney")
+
+[node name="GPUParticles3D" type="GPUParticles3D" parent="."]
+emitting = false
+amount = 20
+lifetime = 1.1
+preprocess = 1.08
+explosiveness = 1.0
+fract_delta = false
+process_material = SubResource("ParticleProcessMaterial_7eney")
+draw_pass_1 = SubResource("SphereMesh_ks5fa")
+draw_skin = SubResource("Skin_6mo0d")
+
+[node name="AudioStreamPlayer3D" type="AudioStreamPlayer3D" parent="."]
+stream = ExtResource("2_bv6vi")

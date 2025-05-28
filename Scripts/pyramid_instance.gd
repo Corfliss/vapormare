@@ -1,15 +1,20 @@
 extends CharacterBody3D
 
 var player : Node3D = null
-
+var mesh_instance: MeshInstance3D
+@onready var pistol = get_node("/root/Level/Character/Head/Weapons/WeaponPistol")
 @export var speed : float = 4.0
+@onready var sfx = $AudioStreamPlayer3D
 
 func _ready():
+	print(pistol)
+	pistol.connect("mesh_destroy", Callable(self, "_on_enemy_destroyed"))
 	$Area3D.body_entered.connect(_on_body_entered)
 	create_pyramid_mesh()
 	var players = get_tree().get_nodes_in_group("player")
 	if players.size() > 0:
-		player = players[0] 
+		player = players[0]
+	
 
 func create_pyramid_mesh():
 	var pyramid = ArrayMesh.new()
@@ -40,7 +45,7 @@ func create_pyramid_mesh():
 
 	pyramid.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 
-	var mesh_instance = MeshInstance3D.new()
+	mesh_instance = MeshInstance3D.new()
 	var material := StandardMaterial3D.new()
 	material.albedo_color = Color("4444EE")
 	material.emission_enabled = true
@@ -59,3 +64,9 @@ func _on_body_entered(body):
 	if body.is_in_group("player"):
 		print("Character touched the pyramid!")
 		body.take_damage(10)  # If your character has a take_damage function
+
+func _on_enemy_destroyed(hit: Node3D):
+	if hit == self:  # Make sure it's the pyramid being hit
+		if mesh_instance:
+			remove_child(mesh_instance)
+	sfx.play(0.1)

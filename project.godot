@@ -10,7 +10,7 @@ config_version=5
 
 [application]
 
-config/name="Sightmare"
+config/name="Vapormare"
 run/main_scene="uid://c8xbhqgw71my6"
 config/features=PackedStringArray("4.4", "Forward Plus")
 boot_splash/bg_color=Color(0, 0, 0, 1)
@@ -30,7 +30,7 @@ project/assembly_name="Fragmare"
 [editor]
 
 movie_writer/mjpeg_quality=1.0
-movie_writer/movie_file="D:/Media/Captures/Godot Projects/2025.03.29.avi"
+movie_writer/movie_file="D:/Media/Captures/Godot Projects/temp.avi"
 
 [global_group]
 
